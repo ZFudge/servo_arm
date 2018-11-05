@@ -6,10 +6,10 @@ Servo elbo_servo;
 Servo neck_servo;
 Servo grab_servo;
 
-float base_pos = 90;
-float knee_pos = 90;
-float elbo_pos = 90;
-float neck_pos = 90;
+int base_pos = 90;
+int knee_pos = 90;
+int elbo_pos = 90;
+int neck_pos = 90;
 int grab_pos = 0;
 
 int grab_read = 1;
@@ -17,13 +17,13 @@ int grab_it = 1;
 
 const int Grab_pin = 2; // lower digital switch output
 
-const int Lo_X_pin = 0; // lower analog X output
+const int Lo_X_pin = 0; // lower analog X axis output
 const int Lo_Y_pin = 1;
 
-const int Up_X_pin = 2; // upper
+const int Up_X_pin = 2; // upper servos
 const int Up_Y_pin = 3;
 
-int print_limiter = 1;
+int print_limiter = 1; // variables to control print frequency
 
 void setup() {
   Serial.begin(9600);
@@ -39,13 +39,16 @@ void setup() {
 }
 
 void loop() {
-  base_pos = round((analogRead(Lo_X_pin) / 14.628) + 55);
-  int knee_move = map(analogRead(Lo_Y_pin), 0, 1023, -90, 90);
-  int elbo_move = map(analogRead(Up_X_pin), 0, 1023, -90, 90);
-  int neck_move = map(analogRead(Up_Y_pin), 0, 1023, -90, 90);
-  grab_read = digitalRead(Grab_pin);
+  base_pos = map(analogRead(Lo_X_pin), 0, 1023, 58, 125);
   
-  base_servo.write(base_pos);
+  int knee_read = analogRead(Lo_Y_pin);
+  int elbo_read = analogRead(Lo_Y_pin);
+  int neck_read = analogRead(Lo_Y_pin);
+  int knee_move = (knee_read > 0) ? map(knee_read, 511, 1023, 0, 180 - knee_pos) : map(knee_read, 0, 511, -1 * knee_pos, 0);
+  int elbo_move = (elbo_read > 0) ? map(elbo_read, 511, 1023, 0, 180 - elbo_pos) : map(elbo_read, 0, 511, -1 * elbo_pos, 0);
+  int neck_move = (neck_read > 0) ? map(neck_read, 511, 1023, 0, 180 - neck_pos) : map(neck_read, 0, 511, -1 * neck_pos, 0);
+
+  grab_read = digitalRead(Grab_pin);
 
   if ((knee_move < 0 and knee_pos > 0) or (knee_move > 0 and knee_pos < 180)) knee_pos = constrain(knee_pos + knee_move, 0, 180);
   if ((elbo_move < 0 and elbo_pos > 0) or (elbo_move > 0 and elbo_pos < 180)) elbo_pos = constrain(elbo_pos + elbo_move, 0, 180);
@@ -58,6 +61,7 @@ void loop() {
     grab_it = 1;
   }
 
+  base_servo.write(base_pos);
   knee_servo.write(knee_pos);
   elbo_servo.write(elbo_pos);
   neck_servo.write(neck_pos);
