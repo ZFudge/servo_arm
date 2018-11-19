@@ -28,9 +28,11 @@ int print_limiter = 1; // variables to control print frequency
 void setup() {
   Serial.begin(9600);
   
+  /*  Binary switch input */
   pinMode(Grab_pin, INPUT);
   digitalWrite(Grab_pin, HIGH);
   
+  /*  Attach digital pins 8-12 */
   base_servo.attach(8);
   knee_servo.attach(9);
   elbo_servo.attach(10);
@@ -49,9 +51,11 @@ void loop() {
   int elbo_move = (elbo_read > 511) ? map(elbo_read, 511, 1023, 0, 180 - elbo_pos) : map(elbo_read, 0, 510, -1 * elbo_pos, 0);
   int neck_move = (neck_read > 511) ? map(neck_read, 511, 1023, 0, 180 - neck_pos) : map(neck_read, 0, 510, -1 * neck_pos, 0);
 
-  if ((knee_move < 0 and knee_pos > 0) or (knee_move > 0 and knee_pos < 180)) knee_pos = constrain(knee_pos + knee_move, 0, 180);
-  if ((elbo_move < 0 and elbo_pos > 0) or (elbo_move > 0 and elbo_pos < 180)) elbo_pos = constrain(elbo_pos + elbo_move, 0, 180);
-  if ((neck_move < 0 and neck_pos > 0) or (neck_move > 0 and neck_pos < 180)) neck_pos = constrain(neck_pos + neck_move, 0, 180);
+  /*  Minimum input of 3 degrees to prevent rest input due to hardware interference
+      Increment movement only when input direction cooresponds to remaining range */
+  if (abs(knee_move) > 2 and ((knee_move < 0 and knee_pos > 0) or (knee_move > 0 and knee_pos < 180))) knee_pos = constrain(knee_pos + knee_move, 0, 180);
+  if (abs(elbo_move) > 2 and ((elbo_move < 0 and elbo_pos > 0) or (elbo_move > 0 and elbo_pos < 180))) elbo_pos = constrain(elbo_pos + elbo_move, 0, 180);
+  if (abs(neck_move) > 2 and ((neck_move < 0 and neck_pos > 0) or (neck_move > 0 and neck_pos < 180))) neck_pos = constrain(neck_pos + neck_move, 0, 180);
 
   if (grab_read == 0 and grab_it == 1) {
     grab_it = 0;
@@ -67,16 +71,18 @@ void loop() {
   grab_servo.write(grab_pos);
 
   print_limiter += 1;
-  if (print_limiter % 7 == 0) {
+  if (print_limiter % 3 == 0) {
     print_limiter = 1;
-    Serial.println("Base: " + String(base_pos));
-    Serial.println("Knee: " + String(knee_pos) + " / move : " + String(knee_move));
-    Serial.println("Elbo: " + String(elbo_pos) + " / move : " + String(elbo_move));
-    Serial.println("Neck: " + String(neck_pos) + " / move : " + String(neck_move));
+    Serial.println("\n\n\n\n\n\n");
+    Serial.println("Base:   pos : " + String(base_pos));
+    Serial.println("Knee:   pos : " + String(knee_pos) + "  \t" + " move : " + String(knee_move) + "  \t" + " read : " + String(knee_read));
+    Serial.println("Elbo:   pos : " + String(elbo_pos) + "  \t" + " move : " + String(elbo_move) + "  \t" + " read : " + String(elbo_read));
+    Serial.println("Neck:   pos : " + String(neck_pos) + "  \t" + " move : " + String(neck_move) + "  \t" + " read : " + String(neck_read));
     Serial.println("Swch: " + String(digitalRead(Grab_pin)));
     Serial.println("Grab: " + String((grab_pos) ? "Engaged" : "Disenaged"));
-    Serial.println("\n\n");
+    Serial.println("\n\n\n\n\n\n");
   }
 
   delay(150);
 }
+
